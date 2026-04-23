@@ -4,7 +4,6 @@
       "file_path": "C:\\IMPORTSERVER\\Price\\All Bill Export  bill price fos Mar'26.xlsx",
       "sheet_name": "fos map Mar'26",
       "table_name": "stg_fos_map",
-      "header": 1,
       "join": {
         "imei_column": "rtl_id",
         "file_column": "retailer_id"
@@ -15,18 +14,20 @@
       "file_path": "C:\\IMPORTSERVER\\Price\\All Bill Export  bill price fos Mar'26.xlsx",
       "sheet_name": "all price",
       "table_name": "stg_all_price",
-      "header": 0,
       "join": {
         "imei_column": "goods_id",
         "file_column": "goods_id"
       },
-      "columns": []
+      "columns": [
+  "dp_/_selling_price_(including_gst)",
+  "xiaomi's_selling_price_(including_gst)",
+  "distr_selling_price_(including_gst)"
+]
     },
     {
       "file_path": "C:\\IMPORTSERVER\\Price\\All Bill Export  bill price fos Mar'26.xlsx",
       "sheet_name": "SOMS",
       "table_name": "stg_soms",
-      "header": 0,
       "join": {
         "imei_column": "rtl_id",
         "file_column": "retailer_id"

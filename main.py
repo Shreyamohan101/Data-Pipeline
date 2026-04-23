@@ -6,6 +6,7 @@ import os
 import json
 import pandas as pd
 from sqlalchemy import create_engine
+from urllib.parse import quote_plus
 
 load_dotenv(r"C:\Users\ASUS\Desktop\imei-pipeline\.env")
 
@@ -27,9 +28,6 @@ db_config = {
 
 conn = psycopg2.connect(**db_config)
 cur = conn.cursor()
-
-# SQLAlchemy engine (for staging)
-from urllib.parse import quote_plus
 
 encoded_password = quote_plus(password)
 
@@ -97,36 +95,33 @@ with open("config.json") as f:
 for file in config["files"]:
     print(f"Processing {file['sheet_name']}...")
 
-    # TEMP DEBUG (to find correct header row)
     df = pd.read_excel(
         file["file_path"],
         sheet_name=file["sheet_name"],
-        header=None
+        header=file.get("header", 0)
     )
-
-    print(df.head(10))  
-    df = pd.read_excel(
-    file["file_path"],
-    sheet_name=file["sheet_name"],
-    header=file.get("header", 0)
-)
 
     df.columns = [
         str(c).strip().lower().replace(" ", "_").replace("-", "_")
         for c in df.columns
     ]
 
-    print("Columns:", df.columns)
-
     df.to_sql(file["table_name"], engine, if_exists="replace", index=False)
 
     print(f"Loaded {file['table_name']}")
 
+# STEP 5 — OPTIMIZATION (CRITICAL)
+
+# Convert join columns to TEXT to avoid casting in query
+cur.execute("ALTER TABLE stg_fos_map ALTER COLUMN retailer_id TYPE TEXT;")
+cur.execute("ALTER TABLE stg_soms ALTER COLUMN retailer_id TYPE TEXT;")
+
+# Create indexes for fast joins
 cur.execute("CREATE INDEX IF NOT EXISTS idx_imei_rtl_id ON imei_data(rtl_id);")
 cur.execute("CREATE INDEX IF NOT EXISTS idx_fos_retailer_id ON stg_fos_map(retailer_id);")
 cur.execute("CREATE INDEX IF NOT EXISTS idx_soms_retailer_id ON stg_soms(retailer_id);")
 
-# STEP 5 — ENRICHMENT LOOP
+# STEP 6 — ENRICHMENT LOOP
 
 for file in config["files"]:
     table = file["table_name"]
@@ -144,7 +139,7 @@ for file in config["files"]:
         UPDATE imei_data i
         SET {col} = s.{col}
         FROM {table} s
-        WHERE i.{join['imei_column']}::TEXT = s.{join['file_column']}::TEXT;
+        WHERE i.{join['imei_column']} = s.{join['file_column']};
         """)
 
 # FINAL COMMIT
